@@ -1,37 +1,38 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { User } from '../entities/user.entity';
-import { DeleteResult, Repository } from 'typeorm';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import {InjectRepository} from '@nestjs/typeorm';
+import {user} from '../entities/user.entity'
+import {DeleteResult, Repository} from "typeorm";
+import {createUserDto} from "./dto/create-user.dto";
+import {UpdateUserDto} from "./dto/update-user.dto";
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
-  constructor(
-    @InjectRepository(User) private readonly userRepository: Repository<User>,
-  ) {}
+    constructor(@InjectRepository(user) private readonly userRepository: Repository<user>) {
 
-  async findAll(): Promise<User[]> {
-    return this.userRepository.find();
-  }
+    }
+    async findAll(): Promise<user[]>{
+        return  this.userRepository.find();
+    }
+    async create(CreateUserDto: createUserDto): Promise<user>{
+        const hashed = await bcrypt.hash(CreateUserDto.password,10);
+        const data = {...CreateUserDto,password:hashed};
+        const newUser =  this.userRepository.create(data);
+        return this.userRepository.save(newUser);
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    const newUser = this.userRepository.create(createUserDto);
-    return this.userRepository.save(newUser);
-  }
-  async delete(id: number): Promise<DeleteResult> {
-    return this.userRepository.delete(id);
-  }
+    }
+    async delete(id:number):Promise<DeleteResult>{
+        return this.userRepository.delete(id);
+    }
+    async findById(id:number):Promise<user>{
+        return this.userRepository.findOneBy({id});
+    }
+    async findByEmail(email:string):Promise<user>{
+        return this.userRepository.findOneBy({email});
+    }
 
-  async findById(id: number): Promise<User> {
-    return this.userRepository.findOneBy({ id });
-  }
-  async findByEmail(email: string): Promise<User> {
-    return this.userRepository.findOneBy({ email });
-  }
-
-  async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    await this.userRepository.update(id, updateUserDto);
-    return this.findById(id);
-  }
+    async update(id:number,updateUserDto:UpdateUserDto):Promise<user>{
+        await this.userRepository.update(id,updateUserDto);
+        return this.findById(id);
+    }
 }
